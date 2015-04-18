@@ -1,3 +1,4 @@
+#pragma once
 
 class texture_t {
     SDL_Texture* m_texture;
@@ -25,7 +26,7 @@ public:
     texture_t& operator=(const texture_t& other) = delete;
     
     ~texture_t() {
-        //SDL_DestroyTexture( m_texture );
+        SDL_DestroyTexture( m_texture );
     }
     int width() {
         return m_width;

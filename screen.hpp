@@ -1,3 +1,5 @@
+#pragma once
+
 class screen_t {
     SDL_Window* m_window;
     SDL_Renderer* m_renderer;

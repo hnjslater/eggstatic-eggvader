@@ -29,3 +29,6 @@
 
 # Assets
 *.png
+
+# Temps
+*.swp

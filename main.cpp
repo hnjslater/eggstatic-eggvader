@@ -12,6 +12,7 @@
 
 #include <texture.hpp>
 #include <screen.hpp>
+#include <world.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -22,22 +23,20 @@
 int main()
 {
     bool ticking = true;
+    size_t since_last_tick = 0;
     size_t frame_count = 0;
     size_t too_long = 0;
-
     using frame_duration = std::chrono::duration<int, std::ratio<1, 45>>;
     screen_t screen;
-
-    auto texture = screen.make_texture("egg.png" );
-    /*
-    auto wall = screen.make_texture("wall.png" );
-    auto food = screen.make_texture("food.png" );
-    auto base = screen.make_texture("base.png" );
-    auto carry = screen.make_texture("collector_carrying.png" ); */
+    egg_t::s_texture = screen.make_texture("egg.png" );
+    collector_t::s_texture = screen.make_texture("collector.png" );
     bool quit =  false;
-    SDL_Event e;
+
+    world_t world;
+
     while( !quit )
     {
+        SDL_Event e;
         auto start_time = std::chrono::steady_clock::now();
         auto end_time = start_time + frame_duration(1);
         //Handle events on queue
@@ -63,26 +62,27 @@ int main()
                     }*/
                 }
         }
-        if (ticking) {
-            //world.tick();
-            //c = 0;
+        if (ticking && since_last_tick > 10) {
+            world.tick();
+            since_last_tick = 0;
         }
+        else {
+            since_last_tick++;
+        }
+
 
         screen.clear();
 
-        texture->paint(0,0);
+        world.paint();
 
 
-        screen.update();
         frame_count++;
+        screen.update();
 
     if (end_time < std::chrono::steady_clock::now()) {
         too_long++;
     }
     std::this_thread::sleep_until(end_time);
-    if (frame_count == 1000) {
-        //quit = true;
-    }
 
     }
 
