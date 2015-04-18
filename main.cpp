@@ -39,6 +39,9 @@ int main()
     egg_t::s_texture = screen.make_texture("egg.png" );
     collector_t::s_texture = screen.make_texture("collector.png" );
     thing_t::s_selected = screen.make_texture("selected.png" );
+    food_t::s_textures[2] = screen.make_texture("food1.png");
+    food_t::s_textures[1] = screen.make_texture("food2.png");
+    food_t::s_textures[0] = screen.make_texture("food3.png");
     bool quit =  false;
 
     world_t world;

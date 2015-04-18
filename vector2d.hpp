@@ -21,6 +21,9 @@ public:
     T& get(const std::pair<int, int>& xy) {
         return get(xy.first, xy.second);
     }
+    std::vector<std::pair<size_t,size_t>> get_surroundings(size_t x, size_t y) {
+        return get_surroundings(index_of(x,y));
+    }
     std::vector<std::pair<size_t,size_t>> get_surroundings(size_t l) {
         bool top_edge = l < width();
         bool bot_edge = l >= (width()*height() - width());
