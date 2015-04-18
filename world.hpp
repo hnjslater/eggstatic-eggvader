@@ -9,15 +9,13 @@ class world_t {
 public:
     world_t() : m_grid(1024,768) {
         m_grid.get(0,5) = std::make_shared<egg_t>();
-        m_grid.get(5,5) = std::make_shared<food_t>();
-        m_grid.get(6,5) = std::make_shared<food_t>();
-        m_grid.get(7,5) = std::make_shared<food_t>();
-        m_grid.get(5,6) = std::make_shared<food_t>();
-        m_grid.get(6,6) = std::make_shared<food_t>();
-        m_grid.get(7,6) = std::make_shared<food_t>();
-        m_grid.get(5,7) = std::make_shared<food_t>();
-        m_grid.get(6,7) = std::make_shared<food_t>();
-        m_grid.get(7,7) = std::make_shared<food_t>();
+        for (size_t x = 5; x < 30; x++) {
+            for (size_t y = 5; y < 30; y++) {
+                m_grid.get(x,y) = std::make_shared<food_t>();
+
+            }
+        }
+
         m_grid.get(0,6) = std::make_shared<collector_t>();
         m_grid.get(0,7) = std::make_shared<collector_t>();
         m_grid.get(0,8) = std::make_shared<collector_t>();
@@ -27,8 +25,9 @@ public:
         for (auto x = 0u; x  < m_grid.width(); x++)
             for (auto y = 0u; y < m_grid.height(); y++) {
                 auto current = m_grid.get(x,y);
-                if (current)
+                if (current) {
                     current->paint(x,y);
+                }
             }
     }
     void tick() {
@@ -78,10 +77,11 @@ public:
         }
     }
     void set_selected_goal(size_t x, size_t y) {
+
         for (auto item : m_grid) {
             auto itemc = std::dynamic_pointer_cast<collector_t>(item);
             if (itemc && itemc->m_selected) {
-                itemc->m_goal = std::make_pair(x,y);
+                itemc->m_goal = std::make_tuple(true,x,y);
             }
         }
     }
