@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dijkstra.hpp>
+
 class thing_t;
 
 
@@ -42,21 +44,26 @@ public:
 std::shared_ptr<texture_t> egg_t::s_texture;
 
 class collector_t : public thing_t {
+
+
 public:
+
     static std::shared_ptr<texture_t> s_texture;
+    std::pair<size_t,size_t> m_goal;
+
+    collector_t() : m_goal(0,0) { }
     virtual ~collector_t() { }
     virtual void paint(size_t x, size_t y) override {
         thing_t::paint(x,y);
         s_texture->paint(x*s_texture->width(),y*s_texture->height());
     }
     virtual std::pair<size_t,size_t> tick(const tickargs_t& args) override {
-
         auto is_passable = [&](size_t x, size_t y) {
             return !static_cast<bool>(args.grid.get(x,y));
         };
-
-        auto is_goal = [](size_t x, size_t y) {
-            return (x==1) && (y==1);
+        auto goal = m_goal;
+        auto is_goal = [goal](size_t x, size_t y) {
+            return std::make_pair(x,y) == goal;
         };
        
         auto path = dijkstra(args.grid.width(), args.grid.height(), args.x, args.y, is_goal, is_passable);

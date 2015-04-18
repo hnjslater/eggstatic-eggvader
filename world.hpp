@@ -9,7 +9,9 @@ class world_t {
 public:
     world_t() : m_grid(1024,768) {
         m_grid.get(0,5) = std::make_shared<egg_t>();
-        m_grid.get(30,5) = std::make_shared<collector_t>();
+        m_grid.get(0,6) = std::make_shared<collector_t>();
+        m_grid.get(0,7) = std::make_shared<collector_t>();
+        m_grid.get(0,8) = std::make_shared<collector_t>();
     }
 
     void paint() {
@@ -52,6 +54,14 @@ public:
         auto thing = m_grid.get(x, y);
         if (thing)
             thing->m_selected = !thing->m_selected;
+    }
+    void set_selected_goal(size_t x, size_t y) {
+        for (auto item : m_grid) {
+            auto itemc = std::dynamic_pointer_cast<collector_t>(item);
+            if (itemc) {
+                itemc->m_goal = std::make_pair(x,y);
+            }
+        }
     }
 
 };

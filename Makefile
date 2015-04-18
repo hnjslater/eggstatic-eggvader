@@ -6,4 +6,4 @@ a.out: *.hpp *.cpp $(ASSETS)
 
 
 %.png: svg/%.svg
-	inkscape --export-png $@ -w 64 -h 64 $< 
+	inkscape --export-png $@ -w 32 -h 32 $< 

@@ -61,7 +61,12 @@ int main()
                     size_t w = collector_t::s_texture->width();
                     size_t h = collector_t::s_texture->height();
                     SDL_GetMouseState(&x, &y);
-                    world.toggle_select(x/w, y/h);
+                    if (e.button.button == SDL_BUTTON_LEFT) {
+                        world.toggle_select(x/w, y/h);
+                    }
+                    else {
+                        world.set_selected_goal(x/w,y/h);
+                    }
                 }
                 /*
                 else if (e.type == SDL_KEYDOWN) {
