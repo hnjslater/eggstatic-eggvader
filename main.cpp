@@ -9,6 +9,11 @@
 #include <unistd.h>
 #include <chrono>
 #include <thread>
+#include <random>
+#include <algorithm>
+namespace globals {
+    std::mt19937 twister;
+}
 
 #include <texture.hpp>
 #include <screen.hpp>
@@ -22,6 +27,9 @@
 
 int main()
 {
+    std::random_device rd;
+    globals::twister  = std::mt19937(rd());
+
     bool ticking = true;
     size_t since_last_tick = 0;
     size_t frame_count = 0;
@@ -30,6 +38,7 @@ int main()
     screen_t screen;
     egg_t::s_texture = screen.make_texture("egg.png" );
     collector_t::s_texture = screen.make_texture("collector.png" );
+    thing_t::s_selected = screen.make_texture("selected.png" );
     bool quit =  false;
 
     world_t world;
@@ -47,12 +56,14 @@ int main()
                         quit = true;
                 }
                 else if (e.type == SDL_MOUSEBUTTONUP) {
-                    /*
                     int x;
                     int y;
+                    size_t w = collector_t::s_texture->width();
+                    size_t h = collector_t::s_texture->height();
                     SDL_GetMouseState(&x, &y);
-                    world.get(x/texture->width(),y/texture->height()) = place_t(place_type_t::FOOD);
+                    world.toggle_select(x/w, y/h);
                 }
+                /*
                 else if (e.type == SDL_KEYDOWN) {
                     if (e.key.keysym.sym == SDLK_ESCAPE) {
                         quit = true;
@@ -60,7 +71,6 @@ int main()
                     else {
                         //ticking = !ticking;
                     }*/
-                }
         }
         if (ticking && since_last_tick > 10) {
             world.tick();

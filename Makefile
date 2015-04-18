@@ -1,4 +1,4 @@
-ASSETS=egg.png collector.png
+ASSETS=egg.png collector.png selected.png
 
 a.out: *.hpp *.cpp $(ASSETS)
 	g++ --std=c++14 -I /usr/include/SDL2/  -I. main.cpp -lSDL2_image -lSDL2 -Wall -Werror -Wextra -Weffc++ -pthread -O4 -ggdb

@@ -9,7 +9,7 @@ class world_t {
 public:
     world_t() : m_grid(1024,768) {
         m_grid.get(0,5) = std::make_shared<egg_t>();
-        m_grid.get(5,5) = std::make_shared<collector_t>();
+        m_grid.get(30,5) = std::make_shared<collector_t>();
     }
 
     void paint() {
@@ -23,16 +23,21 @@ public:
     void tick() {
         std::vector<std::tuple<size_t, size_t, size_t, size_t>> changes;
         size_t x1, y1, x2, y2;
+        tickargs_t args(m_grid);
         for (x1 = 0; x1 < m_grid.width(); x1++)
             for (y1 = 0; y1 < m_grid.height(); y1++) {
                 auto current = m_grid.get(x1,y1);
                 if (current) {
-                    std::tie(x2,y2) = current->tick(x1,y1);
+                    args.x = x1;
+                    args.y = y1;
+                    std::tie(x2,y2) = current->tick(args);
                     if (x1 != x2 || y1 != y2) {
                         changes.emplace_back(x1,y1,x2,y2);
                     }
                 }
         }
+        
+        std::shuffle(changes.begin(), changes.end(), globals::twister);
 
         for (auto change : changes) {
             std::tie(x1,y1,x2,y2) = change;
@@ -42,6 +47,11 @@ public:
                 std::swap(next,current);
             }
         }
+    }
+    void toggle_select(size_t x, size_t y) {
+        auto thing = m_grid.get(x, y);
+        if (thing)
+            thing->m_selected = !thing->m_selected;
     }
 
 };
