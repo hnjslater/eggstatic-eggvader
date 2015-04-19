@@ -45,6 +45,7 @@ int main()
     food_t::s_textures[2] = screen.make_texture("food2.png");
     food_t::s_textures[1] = screen.make_texture("food3.png");
     food_t::s_textures[0] = screen.make_texture("food4.png");
+    killer_t::s_textures[0] = screen.make_texture("killer.png");
     bool quit =  false;
 
     world_t world;

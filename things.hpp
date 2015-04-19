@@ -109,15 +109,19 @@ public:
     std::tuple<bool,size_t,size_t> m_goal;
     size_t m_food;
     size_t m_team;
+    ssize_t m_health;
     
 
-    collector_t(size_t team) : m_goal(false,0,0), m_food(0), m_team(team) { }
+    collector_t(size_t team) : m_goal(false,0,0), m_food(0), m_team(team), m_health(100) { }
     virtual ~collector_t() { }
     virtual void paint(size_t x, size_t y) override {
         thing_t::paint(x,y);
         s_textures[m_team]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
     virtual tickrtn_t tick(const tickargs_t& args) override {
+        if (m_health <= 0) {
+            return std::make_tuple(false, args.x, args.y, new_things_t());
+        }
         if (!std::get<0>(m_goal)) {
             if (m_food < 10) {
                 for (auto& place : args.grid.get_surroundings(args.x,args.y)) {
@@ -178,9 +182,51 @@ public:
     size_t team() {
         return m_team;
     }
+    void hurt() {
+        m_health -= 10;
+    }
     
 };
 
 std::array<std::shared_ptr<texture_t>,2> collector_t::s_textures;
 
 
+class killer_t : public thing_t {
+public:
+    static std::array<std::shared_ptr<texture_t>,2> s_textures;
+    size_t m_team;
+
+    killer_t(size_t team) : m_team(team) { }
+    virtual ~killer_t() { }
+    virtual void paint(size_t x, size_t y) override {
+        s_textures[m_team]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
+    }
+    virtual tickrtn_t tick(const tickargs_t& args) override {
+        for (auto& place : args.grid.get_surroundings(args.x,args.y)) {
+            auto collector = std::dynamic_pointer_cast<collector_t>(args.grid[place.first]);
+            if (collector && collector->team() != team()) {
+                collector->hurt();
+                return std::make_tuple(true,args.x,args.y,new_things_t());
+            }
+        }
+
+        auto is_passable = [&](size_t x, size_t y) {
+            return !static_cast<bool>(args.grid.get(x,y));
+        };
+        auto objective = [&](size_t x, size_t y) {
+            auto collector = std::dynamic_pointer_cast<collector_t>(args.grid.get(x,y));
+            return (collector && collector->team() != team());
+        };
+
+       
+        auto path = dijkstra(args.grid.width(), args.grid.height(), args.x, args.y, objective, is_passable);
+
+        return std::tuple_cat(std::make_tuple(true), path[0], std::make_tuple(new_things_t()));
+    }
+    size_t team() {
+        return m_team;
+    }
+    
+};
+
+std::array<std::shared_ptr<texture_t>,2> killer_t::s_textures;
