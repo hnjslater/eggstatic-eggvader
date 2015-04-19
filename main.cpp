@@ -36,8 +36,10 @@ int main()
     size_t too_long = 0;
     using frame_duration = std::chrono::duration<int, std::ratio<1, 45>>;
     screen_t screen;
-    egg_t::s_texture = screen.make_texture("egg.png" );
-    collector_t::s_texture = screen.make_texture("collector.png" );
+    egg_t::s_textures[0] = screen.make_texture("egg.png" );
+    egg_t::s_textures[1] = screen.make_texture("house.png" );
+    collector_t::s_textures[0] = screen.make_texture("collector.png" );
+    collector_t::s_textures[1] = screen.make_texture("person.png" );
     thing_t::s_selected = screen.make_texture("selected.png" );
     food_t::s_textures[3] = screen.make_texture("food1.png");
     food_t::s_textures[2] = screen.make_texture("food2.png");
@@ -62,8 +64,8 @@ int main()
                 else if (e.type == SDL_MOUSEBUTTONUP) {
                     int x;
                     int y;
-                    size_t w = collector_t::s_texture->width();
-                    size_t h = collector_t::s_texture->height();
+                    size_t w = collector_t::s_textures[0]->width();
+                    size_t h = collector_t::s_textures[0]->height();
                     SDL_GetMouseState(&x, &y);
                     if (e.button.button == SDL_BUTTON_LEFT) {
                         world.toggle_select(x/w, y/h);

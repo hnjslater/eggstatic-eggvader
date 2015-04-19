@@ -8,13 +8,14 @@ class world_t {
 
 public:
     world_t() : m_grid(1024,768) {
-        m_grid.get(0,5) = std::make_shared<egg_t>();
+        m_grid.get(0,5) = std::make_shared<egg_t>(0);
         for (size_t x = 5; x < 30; x++) {
             for (size_t y = 5; y < 30; y++) {
                 m_grid.get(x,y) = std::make_shared<food_t>();
 
             }
         }
+        m_grid.get(32,5) = std::make_shared<egg_t>(1);
     }
 
     void paint() {
@@ -78,8 +79,8 @@ public:
         }
     }
     void toggle_select(size_t x, size_t y) {
-        auto thing = m_grid.get(x, y);
-        if (thing) {
+        auto thing = std::dynamic_pointer_cast<collector_t>(m_grid.get(x, y));
+        if (thing && thing->team() == 0) {
             thing->m_selected = !thing->m_selected;
         }
         else {

@@ -39,13 +39,14 @@ std::shared_ptr<texture_t> thing_t::s_selected;
 
 class egg_t : public thing_t {
     size_t m_food;
+    size_t m_team;
 public:
-    static std::shared_ptr<texture_t> s_texture;
-    egg_t() : m_food(100) { }
+    static std::array<std::shared_ptr<texture_t>,2> s_textures;
+    egg_t(size_t team) : m_food(100), m_team(team) { }
     virtual ~egg_t() { }
     virtual void paint(size_t x, size_t y) override {
         thing_t::paint(x,y);
-        s_texture->paint(x*s_texture->width(),y*s_texture->height());
+        s_textures[m_team]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
     void give_food(size_t food) {
         m_food += food;
@@ -53,13 +54,16 @@ public:
     virtual tickrtn_t tick(const tickargs_t& args ) {
         new_things_t new_things;
         if (m_food > 30) {
-            new_things.push_back(std::static_pointer_cast<thing_t>(std::make_shared<collector_t>()));
+            new_things.push_back(std::static_pointer_cast<thing_t>(std::make_shared<collector_t>(m_team)));
             m_food -= 30;
         }
         return std::make_tuple(true,args.x,args.y,new_things);
     }
+    size_t team() {
+        return m_team;
+    }
 };
-std::shared_ptr<texture_t> egg_t::s_texture;
+std::array<std::shared_ptr<texture_t>,2> egg_t::s_textures;
 
 class food_t : public thing_t {
     size_t m_amount_left;
@@ -98,18 +102,20 @@ is<egg_t> is_egg;
 
 class collector_t : public thing_t {
 
+
 public:
 
-    static std::shared_ptr<texture_t> s_texture;
+    static std::array<std::shared_ptr<texture_t>,2> s_textures;
     std::tuple<bool,size_t,size_t> m_goal;
     size_t m_food;
+    size_t m_team;
     
 
-    collector_t() : m_goal(false,0,0), m_food(0) { }
+    collector_t(size_t team) : m_goal(false,0,0), m_food(0), m_team(team) { }
     virtual ~collector_t() { }
     virtual void paint(size_t x, size_t y) override {
         thing_t::paint(x,y);
-        s_texture->paint(x*s_texture->width(),y*s_texture->height());
+        s_textures[m_team]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
     virtual tickrtn_t tick(const tickargs_t& args) override {
         if (!std::get<0>(m_goal)) {
@@ -154,7 +160,9 @@ public:
         }
         else {
             objective = [&](size_t x, size_t y) {
-                return is_egg(args.grid.get(x,y));
+
+                auto egg = std::dynamic_pointer_cast<egg_t>(args.grid.get(x,y));
+                return (egg && egg->team() == team());
             };
         }
 
@@ -167,9 +175,12 @@ public:
         }
         return std::tuple_cat(std::make_tuple(true), path[0], std::make_tuple(new_things_t()));
     }
+    size_t team() {
+        return m_team;
+    }
     
 };
-std::shared_ptr<texture_t> collector_t::s_texture;
 
+std::array<std::shared_ptr<texture_t>,2> collector_t::s_textures;
 
 
