@@ -83,23 +83,24 @@ public:
         }
     }
     void toggle_select(size_t x, size_t y) {
-        auto thing = std::dynamic_pointer_cast<collector_t>(m_grid.get(x, y));
+        auto thing = std::dynamic_pointer_cast<selectable_thing_t>(m_grid.get(x, y));
         if (thing && thing->team() == 0) {
             thing->m_selected = !thing->m_selected;
         }
         else {
             for (auto&& item : m_grid) {
-                if (item)
-                    item->m_selected = false;
+                auto item_thing = std::dynamic_pointer_cast<selectable_thing_t>(m_grid.get(x, y));
+                if (item_thing)
+                    item_thing->m_selected = false;
             }
         }
     }
     void set_selected_goal(size_t x, size_t y) {
 
         for (auto item : m_grid) {
-            auto itemc = std::dynamic_pointer_cast<collector_t>(item);
+            auto itemc = std::dynamic_pointer_cast<selectable_thing_t>(item);
             if (itemc && itemc->m_selected) {
-                itemc->m_goal = std::make_tuple(true,x,y);
+                itemc->set_goal(x,y);
             }
         }
     }

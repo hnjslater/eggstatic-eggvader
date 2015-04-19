@@ -17,36 +17,57 @@ using new_things_t = std::vector<std::shared_ptr<thing_t>>;
 using tickrtn_t = std::tuple<bool,size_t,size_t,new_things_t>;
 
 class thing_t {
+protected:
+    size_t m_team;
+    ssize_t m_health;
 public:
 
-    static std::shared_ptr<texture_t> s_selected;
-    bool m_selected;
-    thing_t() : m_selected(false) { }
+
+
+
+    thing_t(size_t team) : m_team(team), m_health(50) { }
+    thing_t() : m_team(100), m_health(50) { }
     virtual ~thing_t() { }
-    virtual void paint(size_t x, size_t y) {
-        if (m_selected) {
-            thing_t::s_selected->paint(x*s_selected->width(),y*s_selected->height());
-        }
-    }
+    virtual void paint(size_t x, size_t y) = 0;
+
     virtual tickrtn_t tick(const tickargs_t& args ) {
         new_things_t new_things;
-        return std::make_tuple(true,args.x,args.y,new_things);
+        return std::make_tuple(m_health>0,args.x,args.y,new_things);
+    }
+    size_t team() {
+        return m_team;
     }
 
+    void hurt() {
+        m_health -= 10;
+    }
 };
-std::shared_ptr<texture_t> thing_t::s_selected;
 
+
+class selectable_thing_t {
+public:
+    static std::shared_ptr<texture_t> s_selected;
+    selectable_thing_t() : m_selected(false) { }
+    virtual ~selectable_thing_t() { }
+    virtual size_t team() = 0;
+    bool m_selected;
+    virtual void paint(size_t x, size_t y) {
+        if (m_selected) {
+            s_selected->paint(x*s_selected->width(),y*s_selected->height());
+        }
+    }
+    virtual void set_goal(size_t x, size_t y) = 0;
+};
+std::shared_ptr<texture_t> selectable_thing_t::s_selected;
 
 class egg_t : public thing_t {
     size_t m_food;
-    size_t m_team;
 public:
     static std::array<std::shared_ptr<texture_t>,2> s_textures;
-    egg_t(size_t team) : m_food(100), m_team(team) { }
+    egg_t(size_t team) : thing_t(team), m_food(100) { }
     virtual ~egg_t() { }
     virtual void paint(size_t x, size_t y) override {
-        thing_t::paint(x,y);
-        s_textures[m_team]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
+        s_textures[team()]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
     void give_food(size_t food) {
         m_food += food;
@@ -54,14 +75,12 @@ public:
     virtual tickrtn_t tick(const tickargs_t& args ) {
         new_things_t new_things;
         if (m_food > 30) {
-            new_things.push_back(std::static_pointer_cast<thing_t>(std::make_shared<collector_t>(m_team)));
+            new_things.push_back(std::static_pointer_cast<thing_t>(std::make_shared<collector_t>(team())));
             m_food -= 30;
         }
-        return std::make_tuple(true,args.x,args.y,new_things);
+        return std::make_tuple(m_health>0,args.x,args.y,new_things);
     }
-    size_t team() {
-        return m_team;
-    }
+
 };
 std::array<std::shared_ptr<texture_t>,2> egg_t::s_textures;
 
@@ -72,7 +91,6 @@ public:
 
     food_t() : m_amount_left(30) { }
     virtual void paint(size_t x, size_t y) override {
-        thing_t::paint(x,y);
         s_textures[m_amount_left/10]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
     
@@ -100,7 +118,7 @@ bool operator()(const std::shared_ptr<thing_t>& thing) {
 is<food_t> is_food;
 is<egg_t> is_egg;
 
-class collector_t : public thing_t {
+class collector_t : public thing_t, public selectable_thing_t {
 
 
 public:
@@ -108,14 +126,12 @@ public:
     static std::array<std::shared_ptr<texture_t>,2> s_textures;
     std::tuple<bool,size_t,size_t> m_goal;
     size_t m_food;
-    size_t m_team;
-    ssize_t m_health;
-    
 
-    collector_t(size_t team) : m_goal(false,0,0), m_food(0), m_team(team), m_health(100) { }
+
+    collector_t(size_t team) : thing_t(team), m_goal(false,0,0), m_food(0) { }
     virtual ~collector_t() { }
     virtual void paint(size_t x, size_t y) override {
-        thing_t::paint(x,y);
+        selectable_thing_t::paint(x,y);
         s_textures[m_team]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
     virtual tickrtn_t tick(const tickargs_t& args) override {
@@ -165,8 +181,8 @@ public:
         else {
             objective = [&](size_t x, size_t y) {
 
-                auto egg = std::dynamic_pointer_cast<egg_t>(args.grid.get(x,y));
-                return (egg && egg->team() == team());
+                auto thing = args.grid.get(x,y);
+                return (thing && thing->team() == team());
             };
         }
 
@@ -182,8 +198,9 @@ public:
     size_t team() {
         return m_team;
     }
-    void hurt() {
-        m_health -= 10;
+
+    virtual void set_goal(size_t x, size_t y) {
+        m_goal = std::make_tuple(true,x,y);
     }
     
 };
@@ -191,35 +208,53 @@ public:
 std::array<std::shared_ptr<texture_t>,2> collector_t::s_textures;
 
 
-class killer_t : public thing_t {
+class killer_t : public thing_t, public selectable_thing_t {
 public:
     static std::array<std::shared_ptr<texture_t>,2> s_textures;
     size_t m_team;
+    std::tuple<bool,size_t,size_t> m_goal;
 
-    killer_t(size_t team) : m_team(team) { }
+    killer_t(size_t team) : m_team(team), m_goal() { }
     virtual ~killer_t() { }
     virtual void paint(size_t x, size_t y) override {
+        selectable_thing_t::paint(x,y);
         s_textures[m_team]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
     virtual tickrtn_t tick(const tickargs_t& args) override {
-        for (auto& place : args.grid.get_surroundings(args.x,args.y)) {
-            auto collector = std::dynamic_pointer_cast<collector_t>(args.grid[place.first]);
-            if (collector && collector->team() != team()) {
-                collector->hurt();
-                return std::make_tuple(true,args.x,args.y,new_things_t());
+
+        if (args.x == std::get<1>(m_goal) && args.y == std::get<2>(m_goal)) {
+            m_goal = std::make_tuple(false,0,0);
+        }
+        if (!std::get<0>(m_goal)) {
+            for (auto& place : args.grid.get_surroundings(args.x,args.y)) {
+                auto thing = args.grid.get(place);
+                if (thing && thing->team() != team() && thing->team() < 10) {
+                    thing->hurt();
+                    return std::make_tuple(true,args.x,args.y,new_things_t());
+                }
             }
         }
 
         auto is_passable = [&](size_t x, size_t y) {
             return !static_cast<bool>(args.grid.get(x,y));
         };
-        auto objective = [&](size_t x, size_t y) {
-            auto collector = std::dynamic_pointer_cast<collector_t>(args.grid.get(x,y));
-            return (collector && collector->team() != team());
-        };
+        std::function<bool(size_t,size_t)> objective;
+        size_t max_d = std::numeric_limits<size_t>::max();
+        if (std::get<0>(m_goal)) {
+            objective = [&](size_t x, size_t y) {
+                return std::make_tuple(true,x,y) == m_goal;
+            };
+        }
+        else { 
+             objective = [&](size_t x, size_t y) {
+                auto collector = std::dynamic_pointer_cast<selectable_thing_t>(args.grid.get(x,y));
+                return (collector && collector->team() != team());
+            };
+            max_d = 10;
+        }
 
        
-        auto path = dijkstra(args.grid.width(), args.grid.height(), args.x, args.y, objective, is_passable);
+        auto path = dijkstra(args.grid.width(), args.grid.height(), args.x, args.y, max_d, objective, is_passable);
 
         return std::tuple_cat(std::make_tuple(true), path[0], std::make_tuple(new_things_t()));
     }
@@ -227,6 +262,9 @@ public:
         return m_team;
     }
     
+    virtual void set_goal(size_t x, size_t y) override {
+        m_goal = std::make_tuple(true,x,y);
+    }
 };
 
 std::array<std::shared_ptr<texture_t>,2> killer_t::s_textures;

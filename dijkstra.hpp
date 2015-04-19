@@ -1,6 +1,6 @@
 #pragma once
 template<typename IsGoal, typename IsPassable>
-std::vector<std::pair<size_t,size_t>> dijkstra(size_t w, size_t h, size_t x, size_t y, IsGoal is_goal, IsPassable is_passable) {
+std::vector<std::pair<size_t,size_t>> dijkstra(size_t w, size_t h, size_t x, size_t y, size_t max_d, IsGoal is_goal, IsPassable is_passable) {
     vector2d_t<size_t> dvect(w,h);
     for (auto& a : dvect) {
         a = std::numeric_limits<size_t>::max();
@@ -21,7 +21,7 @@ std::vector<std::pair<size_t,size_t>> dijkstra(size_t w, size_t h, size_t x, siz
         todo.pop_front();
 
         for (auto& s : dvect.get_surroundings(x)) {
-            if (dvect[s.first] > v+s.second) {
+            if (dvect[s.first] > v+s.second && v+s.second < max_d) {
                 size_t cx, cy;
                 std::tie(cx, cy) = dvect.index_of(s.first); 
                 if (is_goal(cx,cy)) {
@@ -74,4 +74,9 @@ std::vector<std::pair<size_t,size_t>> dijkstra(size_t w, size_t h, size_t x, siz
     std::reverse(path.begin(), path.end());
 
     return path;
+}
+
+template<typename IsGoal, typename IsPassable>
+std::vector<std::pair<size_t,size_t>> dijkstra(size_t w, size_t h, size_t x, size_t y, IsGoal is_goal, IsPassable is_passable) {
+    return dijkstra(w, h, x, y, std::numeric_limits<size_t>::max(), is_goal, is_passable);
 }

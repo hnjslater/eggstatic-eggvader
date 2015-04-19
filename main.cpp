@@ -40,7 +40,7 @@ int main()
     egg_t::s_textures[1] = screen.make_texture("house.png" );
     collector_t::s_textures[0] = screen.make_texture("collector.png" );
     collector_t::s_textures[1] = screen.make_texture("person.png" );
-    thing_t::s_selected = screen.make_texture("selected.png" );
+    selectable_thing_t::s_selected = screen.make_texture("selected.png" );
     food_t::s_textures[3] = screen.make_texture("food1.png");
     food_t::s_textures[2] = screen.make_texture("food2.png");
     food_t::s_textures[1] = screen.make_texture("food3.png");
