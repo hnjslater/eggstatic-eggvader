@@ -3,6 +3,7 @@
 #include <dijkstra.hpp>
 
 class thing_t;
+class collector_t;
 
 
 struct tickargs_t {
@@ -11,6 +12,9 @@ struct tickargs_t {
     size_t y;
     vector2d_t<std::shared_ptr<thing_t>>& grid;    
 };
+
+using new_things_t = std::vector<std::shared_ptr<thing_t>>;
+using tickrtn_t = std::tuple<bool,size_t,size_t,new_things_t>;
 
 class thing_t {
 public:
@@ -24,8 +28,9 @@ public:
             thing_t::s_selected->paint(x*s_selected->width(),y*s_selected->height());
         }
     }
-    virtual std::tuple<bool,size_t,size_t> tick(const tickargs_t& args ) {
-        return std::make_tuple(true,args.x,args.y);
+    virtual tickrtn_t tick(const tickargs_t& args ) {
+        new_things_t new_things;
+        return std::make_tuple(true,args.x,args.y,new_things);
     }
 
 };
@@ -33,12 +38,25 @@ std::shared_ptr<texture_t> thing_t::s_selected;
 
 
 class egg_t : public thing_t {
+    size_t m_food;
 public:
     static std::shared_ptr<texture_t> s_texture;
+    egg_t() : m_food(100) { }
     virtual ~egg_t() { }
     virtual void paint(size_t x, size_t y) override {
         thing_t::paint(x,y);
         s_texture->paint(x*s_texture->width(),y*s_texture->height());
+    }
+    void give_food(size_t food) {
+        m_food += food;
+    }
+    virtual tickrtn_t tick(const tickargs_t& args ) {
+        new_things_t new_things;
+        if (m_food > 30) {
+            new_things.push_back(std::static_pointer_cast<thing_t>(std::make_shared<collector_t>()));
+            m_food -= 30;
+        }
+        return std::make_tuple(true,args.x,args.y,new_things);
     }
 };
 std::shared_ptr<texture_t> egg_t::s_texture;
@@ -48,16 +66,14 @@ class food_t : public thing_t {
 public:
     static std::array<std::shared_ptr<texture_t>,4> s_textures;
 
-
     food_t() : m_amount_left(30) { }
     virtual void paint(size_t x, size_t y) override {
         thing_t::paint(x,y);
         s_textures[m_amount_left/10]->paint(x*s_textures[0]->width(),y*s_textures[0]->height());
     }
-
     
-    virtual std::tuple<bool,size_t,size_t> tick(const tickargs_t& args) override {
-        return std::make_tuple(m_amount_left>0,args.x,args.y);
+    virtual tickrtn_t tick(const tickargs_t& args) override {
+        return std::make_tuple(m_amount_left>0,args.x,args.y,new_things_t());
     }
 
     void eat() {
@@ -95,7 +111,7 @@ public:
         thing_t::paint(x,y);
         s_texture->paint(x*s_texture->width(),y*s_texture->height());
     }
-    virtual std::tuple<bool,size_t,size_t> tick(const tickargs_t& args) override {
+    virtual tickrtn_t tick(const tickargs_t& args) override {
         if (!std::get<0>(m_goal)) {
             if (m_food < 10) {
                 for (auto& place : args.grid.get_surroundings(args.x,args.y)) {
@@ -103,7 +119,7 @@ public:
                     if (food_place) {
                         food_place->eat();
                         m_food++;
-                        return std::make_tuple(true,args.x,args.y);
+                        return std::make_tuple(true,args.x,args.y,new_things_t());
                     }
                 }
             }
@@ -111,11 +127,12 @@ public:
                 for (auto& place : args.grid.get_surroundings(args.x,args.y)) {
                     auto egg_place = std::dynamic_pointer_cast<egg_t>(args.grid[place.first]);
                     if (egg_place) {
+                        egg_place->give_food(m_food);
                         m_food=0;
                         if (is_food(args.grid.get(std::get<1>(m_goal), std::get<2>(m_goal)))) {
                             m_goal = std::make_tuple(true,std::get<1>(m_goal), std::get<2>(m_goal)); 
                         }
-                        return std::make_tuple(true,args.x,args.y);
+                        return std::make_tuple(true,args.x,args.y,new_things_t());
                     }
                 }
                 
@@ -148,7 +165,7 @@ public:
             m_goal = std::make_tuple(false, std::get<1>(m_goal), std::get<2>(m_goal));
 
         }
-        return std::tuple_cat(std::make_tuple(true), path[0]);
+        return std::tuple_cat(std::make_tuple(true), path[0], std::make_tuple(new_things_t()));
     }
     
 };

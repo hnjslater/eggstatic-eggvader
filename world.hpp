@@ -15,10 +15,6 @@ public:
 
             }
         }
-
-        m_grid.get(0,6) = std::make_shared<collector_t>();
-        m_grid.get(0,7) = std::make_shared<collector_t>();
-        m_grid.get(0,8) = std::make_shared<collector_t>();
     }
 
     void paint() {
@@ -34,6 +30,8 @@ public:
         std::vector<std::tuple<size_t, size_t, size_t, size_t>> changes;
         size_t x1, y1, x2, y2;
         bool alive;
+        new_things_t new_new_things;
+        std::vector<std::tuple<size_t, size_t, std::shared_ptr<thing_t>>> new_things;
         tickargs_t args(m_grid);
         for (x1 = 0; x1 < m_grid.width(); x1++)
             for (y1 = 0; y1 < m_grid.height(); y1++) {
@@ -41,7 +39,10 @@ public:
                 if (current) {
                     args.x = x1;
                     args.y = y1;
-                    std::tie(alive,x2,y2) = current->tick(args);
+                    std::tie(alive,x2,y2,new_new_things) = current->tick(args);
+                    for (auto& item : new_new_things) {
+                        new_things.emplace_back(x1,y1,item);
+                    }
                     if (alive) {
                         if (x1 != x2 || y1 != y2) {
                             changes.emplace_back(x1,y1,x2,y2);
@@ -55,6 +56,18 @@ public:
         
         std::shuffle(changes.begin(), changes.end(), globals::twister);
 
+        for (auto& addition : new_things) {
+            std::shared_ptr<thing_t> thing;
+            std::tie(x1,y1,thing) = addition;
+            for (auto& option : m_grid.get_surroundings(x1,y1)) {
+                auto& place = m_grid[std::get<0>(option)];
+                if (!place) {
+                    place = thing;
+                    break;
+                }
+                
+            }
+        }
         for (auto change : changes) {
             std::tie(x1,y1,x2,y2) = change;
             auto& next = m_grid.get(x2,y2);
